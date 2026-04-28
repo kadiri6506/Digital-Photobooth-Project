@@ -7,14 +7,13 @@ import re
 import tkinter as tk
 from tkinter import simpledialog
 
-# --- 1. AYARLAR ---
+# --- SETTINGS ---
 proje_klasoru = os.path.dirname(os.path.abspath(__file__))
 cerceve_klasoru = os.path.join(proje_klasoru, "frames")
 cikti_klasoru = os.path.join(proje_klasoru, "outputs")
 
 os.makedirs(cerceve_klasoru, exist_ok=True)
 os.makedirs(cikti_klasoru, exist_ok=True)
-# --- SETTINGS ---
 WELCOME_PATH = ""
 
 # Is the file path empty?
