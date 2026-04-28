@@ -1,0 +1,8 @@
+# Python
+.venv/
+__pycache__/
+#outputs
+Digifest_Photobooth\outputs
+
+.vscode/
+.DS_Store
