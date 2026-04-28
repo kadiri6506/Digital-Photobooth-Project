@@ -14,33 +14,26 @@ cikti_klasoru = os.path.join(proje_klasoru, "outputs")
 
 os.makedirs(cerceve_klasoru, exist_ok=True)
 os.makedirs(cikti_klasoru, exist_ok=True)
-# --- 1. AYARLAR KISMINDA (Döngünün Dışında) ---
+# --- SETTINGS ---
 WELCOME_PATH = ""
 
-# Dosya yolu boşsa veya dosya klasörde yoksa OpenCV'yi hiç yorma
+# Is the file path empty?
 if WELCOME_PATH != "" and os.path.exists(WELCOME_PATH):
     welcome_img = cv2.imread(WELCOME_PATH)
     welcome_img = cv2.resize(welcome_img, (1280, 720))
 else:
-    # Dosya yoksa veya yol boşsa direkt siyah ekran oluştur (Uyarı vermez)
     welcome_img = np.zeros((720, 1280, 3), dtype=np.uint8)
 
-# Logo Yükleme ve Yerleştirme
-logo_mini = cv2.imread("logo2.jpeg")
+# ADD LOGO
+logo_mini = cv2.imread("ADD YOUR LOGO")
 
 if logo_mini is not None:
     desired_width = 500 
     aspect_ratio = desired_width / logo_mini.shape[1]
     desired_height = int(logo_mini.shape[0] * aspect_ratio)
     logo_mini = cv2.resize(logo_mini, (desired_width, desired_height))
-    
-    # --- ORTALAMA MATEMATİĞİ ---
-    # Logoyu yatayda tam ortalamak için: (1280 - logo_genisligi) / 2
-    # (1280 - 500) / 2 = 390
     x_offset = (1280 - desired_width) // 2 
-    y_offset = 20 # Üstten 20px pay
-    
-    # Logoyu ana görsele yapıştır
+    y_offset = 20
     welcome_img[y_offset:y_offset+desired_height, x_offset:x_offset+desired_width] = logo_mini
 
 SABLON_AYARLARI = {
@@ -65,25 +58,24 @@ SABLON_AYARLARI = {
 cerceve_dosyalari = [f for f in os.listdir(cerceve_klasoru) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
 guncel_index = 0
 user_email = ""
-app_state = "GIRIS" # GIRIS, SECIM, CEKIM
+app_state = "GIRIS" # ENTRY, SELECTION, SHOOTING
 
-cap = cv2.VideoCapture(1) # Iriun için 1, dahili için 0
+cap = cv2.VideoCapture(1) # 1 for Iriun webcam, 0 for internal webcam
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
 cv2.namedWindow('Digifest', cv2.WINDOW_NORMAL)
 cv2.setWindowProperty('Digifest', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
-# --- 2. FONKSİYONLAR ---
+# --- FUNCTİONS ---
 
 def get_email_popup():
-    """Programı dondurmadan mail girişi alır."""
     root = tk.Tk()
-    root.withdraw() # Ana pencereyi gizle
-    root.attributes("-topmost", True) # Üstte tut
-    email = simpledialog.askstring("Digifest Kayıt", "Lütfen mail adresinizi girin:", parent=root)
+    root.withdraw()
+    root.attributes("-topmost", True)
+    email = simpledialog.askstring("", "Please Enter Your Mail Adress:", parent=root) #Save the names of the images by email.
     root.destroy()
-    return email if email else "anonim_kullanici"
+    return email if email else "anonymous_user"
 
 def dosya_ismi_temizle(email):
     return re.sub(r'[\\/*?:"<>|]', "_", email)
@@ -131,7 +123,7 @@ def akilli_overlay(background, overlay_img):
         background[:] = cv2.add(fg, bg)
     return background
 
-# --- 3. ANA DÖNGÜ ---
+# --- MAIN LOOP ---
 while cap.isOpened():
     success, frame = cap.read()
     if not success: break
@@ -141,16 +133,14 @@ while cap.isOpened():
 
     display_img = np.zeros((720, 1280, 3), dtype=np.uint8)
 
-    if app_state == "GIRIS":
-        # Siyah ekran yerine hazırladığın görseli kopyala
+    if app_state == "GIRIS": #Entry
         display_img = welcome_img.copy()
         
-        # İstersen üzerine yanıp sönen bir yazı da ekleyebilirsin
-        if int(time.time() * 2) % 2 == 0: # Yanıp sönme efekti
-             cv2.putText(display_img, "DEVAM ETMEK ICIN SPACE", (400, 600), 
+        if int(time.time() * 2) % 2 == 0:
+             cv2.putText(display_img, "SPACE TO CONTINUE", (400, 600), 
                          cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
         
-    elif app_state == "SECIM":
+    elif app_state == "SECIM": #selection
         dosya_adi = cerceve_dosyalari[guncel_index]
         sablon_img = cv2.imread(os.path.join(cerceve_klasoru, dosya_adi), cv2.IMREAD_UNCHANGED)
         
@@ -163,24 +153,23 @@ while cap.isOpened():
             s_mini = cv2.resize(sablon_img[:,:,:3], (int(sw*s_scale), 500))
             display_img[80:580, 850:850+s_mini.shape[1]] = s_mini
         
-        cv2.putText(display_img, f"Hosgeldin: {user_email}", (50, 50), 1, 1.2, (255, 255, 0), 1)
-        cv2.putText(display_img, "[N]: Cerceveyi Degistir | [S]: Cekimi Baslat", (350, 650), 1, 1.8, (0, 255, 0), 2)
+        cv2.putText(display_img, f"Welcome: {user_email}", (50, 50), 1, 1.2, (255, 255, 0), 1)
+        cv2.putText(display_img, "[N]: Change Frame | [S]: Start Shooting", (350, 650), 1, 1.8, (0, 255, 0), 2)
 
-    cv2.imshow('Digifest', tam_ekrana_sigdir(display_img))
+    cv2.imshow('YOUR EVENTS NAME', tam_ekrana_sigdir(display_img))
     key = cv2.waitKey(1) & 0xFF
 
     if key == ord('q'): break
 
-    if app_state == "GIRIS" and key == 32: # SPACE
+    if app_state == "GIRIS" and key == 32: # SPACE and ENTRY
         user_email = get_email_popup()
-        app_state = "SECIM"
+        app_state = "SECIM" #selection 
 
-    if app_state == "SECIM":
+    if app_state == "SECIM": #selection
         if key == ord('n'):
             guncel_index = (guncel_index + 1) % len(cerceve_dosyalari)
         
         if key == ord('s'):
-            # Çekim Başlıyor
             kutular = SABLON_AYARLARI.get(dosya_adi, SABLON_AYARLARI["default"])
             cekilenler = []
             for i in range(len(kutular)):
@@ -195,7 +184,7 @@ while cap.isOpened():
                 cekilenler.append(p)
                 cv2.imshow('Digifest', np.full((1080,1920,3), 255, np.uint8)); cv2.waitKey(100)
 
-            # Birleştirme
+            # Combination
             final_kolaj = np.ones((sh, sw, 3), dtype=np.uint8) * 255 
             for idx, foto in enumerate(cekilenler):
                 x, y, wk, hk = kutular[idx]
@@ -210,7 +199,7 @@ while cap.isOpened():
             
             cv2.imshow('Digifest', tam_ekrana_sigdir(final_kolaj))
             cv2.waitKey(5000)
-            app_state = "GIRIS" # Başa dön
+            app_state = "GIRIS" # Return start
 
 cap.release()
 cv2.destroyAllWindows()
